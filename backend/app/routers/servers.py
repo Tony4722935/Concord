@@ -968,8 +968,12 @@ def delete_server_channel(
         server_id=server_id,
         actor_user_id=current_user.id,
         action='channel.delete',
-        target_channel_id=deleted_channel_id,
-        details={'name': deleted_name, 'position': deleted_position},
+        target_channel_id=None,
+        details={
+            'channel_id': str(deleted_channel_id),
+            'name': deleted_name,
+            'position': deleted_position,
+        },
     )
 
     db.commit()
