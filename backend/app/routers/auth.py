@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -319,14 +319,8 @@ def delete_me(
             detail='Current password is incorrect.',
         )
 
-    owned_server_count = db.scalar(
-        select(func.count(Server.id)).where(Server.owner_user_id == current_user.id)
-    ) or 0
-    if owned_server_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail='Transfer ownership or delete your owned servers before deleting your account.',
-        )
+    owned_servers = db.scalars(select(Server).where(Server.owner_user_id == current_user.id)).all()
+    owned_server_ids = [server.id for server in owned_servers]
 
     dm_channel_ids = db.scalars(
         select(Channel.id)
@@ -351,6 +345,22 @@ def delete_me(
     )
     if avatar_object_key:
         object_keys.add(avatar_object_key)
+
+    if owned_server_ids:
+        owned_server_message_rows = db.execute(
+            select(Message.image_object_key, Message.image_url)
+            .join(Channel, Channel.id == Message.channel_id)
+            .where(
+                Channel.server_id.in_(owned_server_ids),
+                or_(Message.image_object_key.is_not(None), Message.image_url.is_not(None)),
+            )
+        ).all()
+        object_keys.update(collect_message_object_keys(owned_server_message_rows))
+
+        for server in owned_servers:
+            server_icon_key = resolve_storage_object_key(server.icon_object_key, server.icon_url)
+            if server_icon_key:
+                object_keys.add(server_icon_key)
 
     if dm_channel_ids:
         dm_message_rows = db.execute(
@@ -379,6 +389,9 @@ def delete_me(
         dm_channels = db.scalars(select(Channel).where(Channel.id.in_(dm_channel_ids))).all()
         for channel in dm_channels:
             db.delete(channel)
+
+    for server in owned_servers:
+        db.delete(server)
 
     db.delete(current_user)
     db.commit()

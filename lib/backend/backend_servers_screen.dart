@@ -1000,6 +1000,10 @@ class _BackendServersScreenState extends ConsumerState<BackendServersScreen> {
   }
 
   Future<void> _bootstrap() async {
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -1010,6 +1014,10 @@ class _BackendServersScreenState extends ConsumerState<BackendServersScreen> {
       final servers =
           await _client.listServers(accessToken: widget.session.accessToken);
       final users = await _fetchSidebarUsers();
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _currentUserSettings = me;
@@ -1030,6 +1038,9 @@ class _BackendServersScreenState extends ConsumerState<BackendServersScreen> {
         await _disconnectVoiceSignaling();
         await _disposeVoiceTransport();
         _setMessageContextKey('none');
+        if (!mounted) {
+          return;
+        }
         setState(() {
           _messages = const [];
           _serverMembers = const [];
@@ -1046,11 +1057,17 @@ class _BackendServersScreenState extends ConsumerState<BackendServersScreen> {
         });
       }
     } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _error = error.message;
         _loading = false;
       });
     } catch (_) {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _error = _t('failed_load_backend_data', 'Failed to load backend data.');
         _loading = false;
@@ -2324,6 +2341,9 @@ class _BackendServersScreenState extends ConsumerState<BackendServersScreen> {
 
     if (changed && mounted) {
       await _loadVoiceSettings();
+      if (!mounted) {
+        return;
+      }
       await _bootstrap();
     }
   }
@@ -3212,7 +3232,7 @@ class _BackendServersScreenState extends ConsumerState<BackendServersScreen> {
             SizedBox(
               width: 170,
               child: Text(
-                widget.session.handle,
+                _topBarDisplayName(),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -4666,6 +4686,14 @@ class _BackendServersScreenState extends ConsumerState<BackendServersScreen> {
       }
     }
     return userId.substring(0, 8);
+  }
+
+  String _topBarDisplayName() {
+    final displayName = _currentUserSettings?.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return _t('display_name', 'Display Name');
   }
 
   String _roleLabel(String role) {
