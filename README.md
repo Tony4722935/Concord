@@ -107,4 +107,4 @@ Concord is intentionally centered on practical communication workflows:
 
 ## License
 
-No license file has been added yet.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
