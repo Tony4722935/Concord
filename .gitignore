@@ -3,10 +3,16 @@
 .packages
 .pub/
 /build/
+.metadata
+flutter_export_environment.sh
 
 # Flutter plugin symlinks
 /.flutter-plugins
 /.flutter-plugins-dependencies
+/windows/flutter/ephemeral/
+/linux/flutter/ephemeral/
+/macos/Flutter/ephemeral/
+/ios/Flutter/ephemeral/
 
 # IDE
 .idea/
@@ -20,5 +26,6 @@ Thumbs.db
 # Python backend
 backend/.venv/
 backend/__pycache__/
+backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env
