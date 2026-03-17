@@ -646,6 +646,9 @@ class _BackendServerSettingsScreenState
   Widget build(BuildContext context) {
     final strings = appStringsFor(ref.watch(appLanguageProvider));
     final server = _server;
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final compactLayout = viewportWidth < 980;
+    final compactActions = viewportWidth < 520;
     return PopScope<BackendServerSettingsResult>(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -663,75 +666,150 @@ class _BackendServerSettingsScreenState
           title:
               Text(strings.t('server_settings', fallback: 'Server Settings')),
           actions: [
-            TextButton(
-              onPressed: (_loading || _saving || _working || server == null)
-                  ? null
-                  : _saveServerName,
-              child: Text(_saving
-                  ? strings.t('saving', fallback: 'Saving...')
-                  : strings.t('save_changes', fallback: 'Save Changes')),
-            ),
+            if (compactActions)
+              IconButton(
+                tooltip: strings.t('save_changes', fallback: 'Save Changes'),
+                onPressed: (_loading || _saving || _working || server == null)
+                    ? null
+                    : _saveServerName,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_outlined),
+              )
+            else
+              TextButton(
+                onPressed: (_loading || _saving || _working || server == null)
+                    ? null
+                    : _saveServerName,
+                child: Text(_saving
+                    ? strings.t('saving', fallback: 'Saving...')
+                    : strings.t('save_changes', fallback: 'Save Changes')),
+              ),
           ],
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
-            : Row(
-                children: [
-                  Container(
-                    width: 240,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF1E1F22)
-                        : const Color(0xFFE3E5E8),
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      children: [
-                        _navTile(
-                          label: strings.t('server_settings',
-                              fallback: 'Server Settings'),
-                          section: _ServerSettingsSection.overview,
-                          icon: Icons.tune_outlined,
+            : compactLayout
+                ? ListView(
+                    padding: const EdgeInsets.all(12),
+                    children: [
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children:
+                              _ServerSettingsSection.values.map((section) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(_sectionLabel(strings, section)),
+                                selected: _selectedSection == section,
+                                onSelected: (_) => _selectSection(section),
+                              ),
+                            );
+                          }).toList(growable: false),
                         ),
-                        _navTile(
-                          label: strings.t('channels', fallback: 'Channels'),
-                          section: _ServerSettingsSection.channels,
-                          icon: Icons.forum_outlined,
-                        ),
-                        _navTile(
-                          label: strings.t('delete_server',
-                              fallback: 'Danger Zone'),
-                          section: _ServerSettingsSection.danger,
-                          icon: Icons.warning_amber_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              _error!,
-                              style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error),
-                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.error),
                           ),
-                        if (_selectedSection == _ServerSettingsSection.overview)
-                          _buildOverviewSection()
-                        else if (_selectedSection ==
-                            _ServerSettingsSection.channels)
-                          _buildChannelsSection()
-                        else
-                          _buildDangerSection(),
-                      ],
-                    ),
+                        ),
+                      _buildSelectedSectionContent(),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        width: 240,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF1E1F22)
+                            : const Color(0xFFE3E5E8),
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          children: [
+                            _navTile(
+                              label: strings.t('server_settings',
+                                  fallback: 'Server Settings'),
+                              section: _ServerSettingsSection.overview,
+                              icon: Icons.tune_outlined,
+                            ),
+                            _navTile(
+                              label:
+                                  strings.t('channels', fallback: 'Channels'),
+                              section: _ServerSettingsSection.channels,
+                              icon: Icons.forum_outlined,
+                            ),
+                            _navTile(
+                              label: strings.t('delete_server',
+                                  fallback: 'Danger Zone'),
+                              section: _ServerSettingsSection.danger,
+                              icon: Icons.warning_amber_outlined,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.all(20),
+                          children: [
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  _error!,
+                                  style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error),
+                                ),
+                              ),
+                            _buildSelectedSectionContent(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
       ),
     );
+  }
+
+  String _sectionLabel(AppStrings strings, _ServerSettingsSection section) {
+    switch (section) {
+      case _ServerSettingsSection.overview:
+        return strings.t('server_settings', fallback: 'Server Settings');
+      case _ServerSettingsSection.channels:
+        return strings.t('channels', fallback: 'Channels');
+      case _ServerSettingsSection.danger:
+        return strings.t('delete_server', fallback: 'Danger Zone');
+    }
+  }
+
+  Widget _buildSelectedSectionContent() {
+    if (_selectedSection == _ServerSettingsSection.overview) {
+      return _buildOverviewSection();
+    }
+    if (_selectedSection == _ServerSettingsSection.channels) {
+      return _buildChannelsSection();
+    }
+    return _buildDangerSection();
+  }
+
+  void _selectSection(_ServerSettingsSection section) {
+    if (_selectedSection == section) {
+      return;
+    }
+    setState(() {
+      _selectedSection = section;
+      _error = null;
+    });
   }
 
   Widget _navTile({
@@ -743,12 +821,7 @@ class _BackendServerSettingsScreenState
       selected: _selectedSection == section,
       leading: Icon(icon),
       title: Text(label),
-      onTap: () {
-        setState(() {
-          _selectedSection = section;
-          _error = null;
-        });
-      },
+      onTap: () => _selectSection(section),
     );
   }
 
@@ -767,10 +840,10 @@ class _BackendServerSettingsScreenState
             ),
             const SizedBox(height: 12),
             if (server != null) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  CircleAvatar(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked = constraints.maxWidth < 620;
+                  final avatar = CircleAvatar(
                     radius: 34,
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundImage: (server.iconUrl != null &&
@@ -784,36 +857,73 @@ class _BackendServerSettingsScreenState
                           .toUpperCase(),
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                  );
+                  final changeButton = FilledButton.tonalIcon(
+                    onPressed: _working ? null : _changeServerIcon,
+                    icon: const Icon(Icons.image_outlined),
+                    label: Text(
+                      strings.t(
+                        'change_server_picture',
+                        fallback: 'Change Server Picture',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                  final removeButton = FilledButton.tonalIcon(
+                    onPressed: (_working ||
+                            server.iconUrl == null ||
+                            server.iconUrl!.trim().isEmpty)
+                        ? null
+                        : _removeServerIcon,
+                    icon: const Icon(Icons.delete_outline),
+                    label: Text(
+                      strings.t(
+                        'remove_server_picture',
+                        fallback: 'Remove Picture',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+
+                  if (stacked) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        FilledButton.tonalIcon(
-                          onPressed: _working ? null : _changeServerIcon,
-                          icon: const Icon(Icons.image_outlined),
-                          label: Text(strings.t(
-                            'change_server_picture',
-                            fallback: 'Change Server Picture',
-                          )),
+                        Center(child: avatar),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: changeButton,
                         ),
-                        FilledButton.tonalIcon(
-                          onPressed:
-                              (_working || server.iconUrl == null || server.iconUrl!.trim().isEmpty)
-                                  ? null
-                                  : _removeServerIcon,
-                          icon: const Icon(Icons.delete_outline),
-                          label: Text(strings.t(
-                            'remove_server_picture',
-                            fallback: 'Remove Picture',
-                          )),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: removeButton,
                         ),
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      avatar,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            changeButton,
+                            removeButton,
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 12),
               Text(
@@ -856,20 +966,37 @@ class _BackendServerSettingsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final stacked = constraints.maxWidth < 520;
+                final title = Text(
                   strings.t('channels', fallback: 'Channels'),
                   style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const Spacer(),
-                FilledButton.tonalIcon(
+                );
+                final action = FilledButton.tonalIcon(
                   onPressed: _working ? null : _createChannel,
                   icon: const Icon(Icons.add),
                   label: Text(
                       strings.t('create_channel', fallback: 'Create Channel')),
-                ),
-              ],
+                );
+                if (stacked) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      const SizedBox(height: 10),
+                      SizedBox(width: double.infinity, child: action),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    title,
+                    const Spacer(),
+                    action,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             if (channels.isEmpty)
@@ -879,22 +1006,29 @@ class _BackendServerSettingsScreenState
             else
               ...channels.map((channel) {
                 final isVoice = channel.kind == 'voice';
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    isVoice ? Icons.volume_up_outlined : Icons.tag,
-                  ),
-                  title: Text(channel.name),
-                  subtitle: Text(
-                    isVoice
-                        ? strings.t('channel_kind_voice', fallback: 'Voice')
-                        : strings.t('channel_kind_text', fallback: 'Text'),
-                  ),
-                  trailing: IconButton(
-                    tooltip:
-                        strings.t('delete_channel', fallback: 'Delete Channel'),
-                    onPressed: _working ? null : () => _deleteChannel(channel),
-                    icon: const Icon(Icons.delete_outline),
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: Icon(
+                      isVoice ? Icons.volume_up_outlined : Icons.tag,
+                    ),
+                    title: Text(
+                      channel.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      isVoice
+                          ? strings.t('channel_kind_voice', fallback: 'Voice')
+                          : strings.t('channel_kind_text', fallback: 'Text'),
+                    ),
+                    trailing: IconButton(
+                      tooltip: strings.t('delete_channel',
+                          fallback: 'Delete Channel'),
+                      onPressed:
+                          _working ? null : () => _deleteChannel(channel),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
                   ),
                 );
               }),
@@ -906,6 +1040,7 @@ class _BackendServerSettingsScreenState
 
   Widget _buildDangerSection() {
     final strings = _strings();
+    final compactLayout = MediaQuery.sizeOf(context).width < 520;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -929,6 +1064,7 @@ class _BackendServerSettingsScreenState
               style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.error,
                 foregroundColor: Theme.of(context).colorScheme.onError,
+                minimumSize: compactLayout ? const Size.fromHeight(44) : null,
               ),
               onPressed: _working ? null : _deleteServer,
               child:

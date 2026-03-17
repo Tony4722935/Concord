@@ -1291,6 +1291,9 @@ class _BackendUserSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final strings = appStringsFor(ref.watch(appLanguageProvider));
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final compactLayout = viewportWidth < 980;
+    final compactActions = viewportWidth < 520;
     if (!_loading &&
         _selectedSection == _SettingsSection.voiceAudio &&
         !_audioDevicesLoading &&
@@ -1321,98 +1324,188 @@ class _BackendUserSettingsScreenState
           title:
               Text(strings.t('user_settings_title', fallback: 'User Settings')),
           actions: [
-            TextButton(
-              onPressed:
-                  (_loading || _saving || _deleting) ? null : _saveSettings,
-              child: Text(
-                _saving
-                    ? strings.t('saving', fallback: 'Saving...')
-                    : strings.t('save_changes', fallback: 'Save Changes'),
+            if (compactActions)
+              IconButton(
+                tooltip: strings.t('save_changes', fallback: 'Save Changes'),
+                onPressed:
+                    (_loading || _saving || _deleting) ? null : _saveSettings,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_outlined),
+              )
+            else
+              TextButton(
+                onPressed:
+                    (_loading || _saving || _deleting) ? null : _saveSettings,
+                child: Text(
+                  _saving
+                      ? strings.t('saving', fallback: 'Saving...')
+                      : strings.t('save_changes', fallback: 'Save Changes'),
+                ),
               ),
-            ),
           ],
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
-            : Row(
-                children: [
-                  Container(
-                    width: 240,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF1E1F22)
-                        : const Color(0xFFE3E5E8),
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      children: [
-                        _buildNavTile(
-                          label:
-                              strings.t('my_account', fallback: 'My Account'),
-                          section: _SettingsSection.account,
-                          icon: Icons.person_outline,
-                        ),
-                        _buildNavTile(
-                          label:
-                              strings.t('appearance', fallback: 'Appearance'),
-                          section: _SettingsSection.appearance,
-                          icon: Icons.palette_outlined,
-                        ),
-                        _buildNavTile(
-                          label: strings.t('chat', fallback: 'Chat'),
-                          section: _SettingsSection.chat,
-                          icon: Icons.chat_bubble_outline,
-                        ),
-                        _buildNavTile(
-                          label: strings.t(
-                            'language_region',
-                            fallback: 'Language & Region',
-                          ),
-                          section: _SettingsSection.languageRegion,
-                          icon: Icons.language_outlined,
-                        ),
-                        _buildNavTile(
-                          label: strings.t(
-                            'voice_audio',
-                            fallback: 'Voice & Audio',
-                          ),
-                          section: _SettingsSection.voiceAudio,
-                          icon: Icons.graphic_eq_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              _error!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
+            : compactLayout
+                ? ListView(
+                    padding: const EdgeInsets.all(12),
+                    children: [
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _SettingsSection.values.map((section) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(_sectionLabel(strings, section)),
+                                selected: _selectedSection == section,
+                                onSelected: (_) => _selectSection(section),
                               ),
+                            );
+                          }).toList(growable: false),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
                             ),
                           ),
-                        if (_selectedSection == _SettingsSection.account)
-                          _buildAccountSection()
-                        else if (_selectedSection ==
-                            _SettingsSection.appearance)
-                          _buildAppearanceSection()
-                        else if (_selectedSection == _SettingsSection.chat)
-                          _buildChatSection()
-                        else if (_selectedSection ==
-                            _SettingsSection.languageRegion)
-                          _buildLanguageRegionSection()
-                        else
-                          _buildVoiceAudioSection(),
-                      ],
-                    ),
+                        ),
+                      _buildSelectedSectionContent(),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        width: 240,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF1E1F22)
+                            : const Color(0xFFE3E5E8),
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          children: [
+                            _buildNavTile(
+                              label: strings.t('my_account',
+                                  fallback: 'My Account'),
+                              section: _SettingsSection.account,
+                              icon: Icons.person_outline,
+                            ),
+                            _buildNavTile(
+                              label: strings.t('appearance',
+                                  fallback: 'Appearance'),
+                              section: _SettingsSection.appearance,
+                              icon: Icons.palette_outlined,
+                            ),
+                            _buildNavTile(
+                              label: strings.t('chat', fallback: 'Chat'),
+                              section: _SettingsSection.chat,
+                              icon: Icons.chat_bubble_outline,
+                            ),
+                            _buildNavTile(
+                              label: strings.t(
+                                'language_region',
+                                fallback: 'Language & Region',
+                              ),
+                              section: _SettingsSection.languageRegion,
+                              icon: Icons.language_outlined,
+                            ),
+                            _buildNavTile(
+                              label: strings.t(
+                                'voice_audio',
+                                fallback: 'Voice & Audio',
+                              ),
+                              section: _SettingsSection.voiceAudio,
+                              icon: Icons.graphic_eq_outlined,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.all(20),
+                          children: [
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  _error!,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            _buildSelectedSectionContent(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
       ),
     );
+  }
+
+  String _sectionLabel(AppStrings strings, _SettingsSection section) {
+    switch (section) {
+      case _SettingsSection.account:
+        return strings.t('my_account', fallback: 'My Account');
+      case _SettingsSection.appearance:
+        return strings.t('appearance', fallback: 'Appearance');
+      case _SettingsSection.chat:
+        return strings.t('chat', fallback: 'Chat');
+      case _SettingsSection.languageRegion:
+        return strings.t('language_region', fallback: 'Language & Region');
+      case _SettingsSection.voiceAudio:
+        return strings.t('voice_audio', fallback: 'Voice & Audio');
+    }
+  }
+
+  Widget _buildSelectedSectionContent() {
+    if (_selectedSection == _SettingsSection.account) {
+      return _buildAccountSection();
+    }
+    if (_selectedSection == _SettingsSection.appearance) {
+      return _buildAppearanceSection();
+    }
+    if (_selectedSection == _SettingsSection.chat) {
+      return _buildChatSection();
+    }
+    if (_selectedSection == _SettingsSection.languageRegion) {
+      return _buildLanguageRegionSection();
+    }
+    return _buildVoiceAudioSection();
+  }
+
+  void _selectSection(_SettingsSection section) {
+    if (_selectedSection == section) {
+      return;
+    }
+    if (_selectedSection == _SettingsSection.voiceAudio &&
+        section != _SettingsSection.voiceAudio &&
+        _voiceTestRunning) {
+      _stopVoiceTest();
+    }
+    if (_selectedSection == _SettingsSection.voiceAudio &&
+        section != _SettingsSection.voiceAudio) {
+      unawaited(_stopMicLevelMonitor());
+    }
+    if (section == _SettingsSection.voiceAudio &&
+        _selectedSection != _SettingsSection.voiceAudio) {
+      unawaited(_loadAudioDevices());
+    }
+    setState(() {
+      _selectedSection = section;
+      _error = null;
+    });
   }
 
   Widget _buildNavTile({
@@ -1424,25 +1517,7 @@ class _BackendUserSettingsScreenState
       selected: _selectedSection == section,
       leading: Icon(icon),
       title: Text(label),
-      onTap: () {
-        if (_selectedSection == _SettingsSection.voiceAudio &&
-            section != _SettingsSection.voiceAudio &&
-            _voiceTestRunning) {
-          _stopVoiceTest();
-        }
-        if (_selectedSection == _SettingsSection.voiceAudio &&
-            section != _SettingsSection.voiceAudio) {
-          unawaited(_stopMicLevelMonitor());
-        }
-        if (section == _SettingsSection.voiceAudio &&
-            _selectedSection != _SettingsSection.voiceAudio) {
-          unawaited(_loadAudioDevices());
-        }
-        setState(() {
-          _selectedSection = section;
-          _error = null;
-        });
-      },
+      onTap: () => _selectSection(section),
     );
   }
 
@@ -1466,10 +1541,10 @@ class _BackendUserSettingsScreenState
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                CircleAvatar(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final stacked = constraints.maxWidth < 620;
+                final avatar = CircleAvatar(
                   radius: 36,
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundImage: (me?.avatarUrl != null &&
@@ -1483,35 +1558,71 @@ class _BackendUserSettingsScreenState
                         .toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                );
+                final changeButton = FilledButton.tonalIcon(
+                  onPressed: _avatarWorking ? null : _changeProfileImage,
+                  icon: const Icon(Icons.image_outlined),
+                  label: Text(
+                    strings.t(
+                      'change_profile_picture',
+                      fallback: 'Change Profile Picture',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+                final removeButton = FilledButton.tonalIcon(
+                  onPressed: (_avatarWorking || me?.avatarUrl == null)
+                      ? null
+                      : _removeProfileImage,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(
+                    strings.t(
+                      'remove_profile_picture',
+                      fallback: 'Remove Picture',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+
+                if (stacked) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _avatarWorking ? null : _changeProfileImage,
-                        icon: const Icon(Icons.image_outlined),
-                        label: Text(strings.t(
-                          'change_profile_picture',
-                          fallback: 'Change Profile Picture',
-                        )),
+                      Center(child: avatar),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: changeButton,
                       ),
-                      FilledButton.tonalIcon(
-                        onPressed: (_avatarWorking || me?.avatarUrl == null)
-                            ? null
-                            : _removeProfileImage,
-                        icon: const Icon(Icons.delete_outline),
-                        label: Text(strings.t(
-                          'remove_profile_picture',
-                          fallback: 'Remove Picture',
-                        )),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: removeButton,
                       ),
                     ],
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    avatar,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          changeButton,
+                          removeButton,
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 14),
             TextField(
@@ -1854,10 +1965,14 @@ class _BackendUserSettingsScreenState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      strings.t(
-                        'loading_audio_devices',
-                        fallback: 'Loading audio devices...',
+                    Expanded(
+                      child: Text(
+                        strings.t(
+                          'loading_audio_devices',
+                          fallback: 'Loading audio devices...',
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -2037,7 +2152,7 @@ class _BackendUserSettingsScreenState
             _buildVoicePanel(
               title: strings.t('voice_test', fallback: 'Mic Test'),
               children: [
-                Row(
+                Wrap(
                   children: [
                     FilledButton.tonalIcon(
                       onPressed: _toggleVoiceTest,
@@ -2048,6 +2163,8 @@ class _BackendUserSettingsScreenState
                         _voiceTestRunning
                             ? strings.t('stop_test', fallback: 'Stop Test')
                             : strings.t('lets_check', fallback: "Let's Check"),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

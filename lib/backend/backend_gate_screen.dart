@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:concord/backend/backend_mobile_shell_screen.dart';
 import 'package:concord/backend/backend_session.dart';
 import 'package:concord/backend/backend_servers_screen.dart';
 import 'package:concord/l10n/app_strings.dart';
@@ -77,9 +78,20 @@ class _BackendGateScreenState extends ConsumerState<BackendGateScreen>
     final strings = appStringsFor(ref.watch(appLanguageProvider));
 
     if (sessionState.session != null) {
-      return BackendServersScreen(
-        session: sessionState.session!,
-        baseUrl: sessionState.baseUrl,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          const mobileBreakpoint = 900.0;
+          if (constraints.maxWidth < mobileBreakpoint) {
+            return BackendMobileShellScreen(
+              session: sessionState.session!,
+              baseUrl: sessionState.baseUrl,
+            );
+          }
+          return BackendServersScreen(
+            session: sessionState.session!,
+            baseUrl: sessionState.baseUrl,
+          );
+        },
       );
     }
 
