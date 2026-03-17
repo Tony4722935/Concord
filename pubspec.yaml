@@ -1,0 +1,32 @@
+name: concord
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1
+  uuid: ^4.4.2
+  intl: ^0.19.0
+  image_picker: ^1.1.2
+  sqlite3: ^2.7.6
+  path: ^1.9.1
+  record: ^6.1.2
+  flutter_webrtc: ^1.2.0
+  crop_your_image: ^2.0.0
+  image: ^4.8.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/icon-1024.png
+    - assets/icons/icon-topbar.png

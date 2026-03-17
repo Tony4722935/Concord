@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+
+  <!-- main harmony shape -->
+  <path d="
+    M70 150
+    C82 90 122 60 178 66
+    C160 74 146 88 136 106
+    C125 126 118 148 116 170
+    C115 178 108 184 100 184
+    H86
+    C73 184 66 164 70 150
+    Z
+  " fill="white"/>
+
+  <!-- secondary flow -->
+  <path d="
+    M100 184
+    C126 184 148 176 166 160
+    C178 148 188 132 196 108
+    C200 118 202 130 202 142
+    C202 178 172 206 134 206
+    C118 206 104 200 92 190
+    Z
+  " fill="white" opacity="0.35"/>
+
+</svg>
